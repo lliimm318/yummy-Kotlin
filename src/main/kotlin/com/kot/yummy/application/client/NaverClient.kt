@@ -1,13 +1,11 @@
 package com.kot.yummy.application.client
 
+import com.kot.yummy.application.dto.request.SearchImageRequest
 import com.kot.yummy.application.dto.request.SearchLocalRequest
-import com.kot.yummy.application.dto.response.SearchLocalResponse
+import com.kot.yummy.application.dto.response.SearchImageResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpEntity
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
+import org.springframework.http.*
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
@@ -29,7 +27,7 @@ data class NaverClient(
 
 ) {
 
-    fun localSearch(searchLocalRequest: SearchLocalRequest): SearchLocalResponse {
+    fun localSearch(searchLocalRequest: SearchLocalRequest): SearchImageResponse? {
         val uri = UriComponentsBuilder
             .fromUriString(naverLocalSearchUrl)
             .queryParams(searchLocalRequest.toMap())
@@ -38,23 +36,49 @@ data class NaverClient(
             .toUri()
 
         val headers = HttpHeaders()
+        headers["X-Naver-Client-Id"] = naverClientId
+        headers["X-Naver-Client-Secret"] = naverSecret
         headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("X-Naver-Client-Id", naverClientId)
-        headers.set("X-Naver-Client-Secret", naverSecret)
 
-        val httpEntity = HttpEntity<Map<String, Any>>(headers)
-        val responseType = ParameterizedTypeReference<SearchLocalResponse>()
+        val httpEntity = HttpEntity<Any>(headers)
+        val responseType: ParameterizedTypeReference<SearchImageResponse?> =
+            object : ParameterizedTypeReference<SearchImageResponse?>() {}
 
         val restTemplate = RestTemplate()
             .exchange(
-                uri, HttpMethod.GET, httpEntity, ParameterizedTypeReference
+                uri, HttpMethod.GET, httpEntity, responseType
             )
 
-        return restTemplate
+        return restTemplate.body
     }
 
-    fun imageSearch(): Unit {
+    fun imageSearch(searchImageRequest: SearchImageRequest): SearchImageResponse? {
+        val uri = UriComponentsBuilder
+            .fromUriString(naverImageSearchUrl)
+            .queryParams(searchImageRequest.toMap())
+            .build()
+            .encode()
+            .toUri()
 
+        val headers = HttpHeaders()
+        headers["X-Naver-Client-Id"] = naverClientId
+        headers["X-Naver-Client-Secret"] = naverSecret
+        headers.contentType = MediaType.APPLICATION_JSON
+
+        val httpEntity = HttpEntity<Any>(headers)
+        val responseType: ParameterizedTypeReference<SearchImageResponse?> =
+            object : ParameterizedTypeReference<SearchImageResponse?>() {}
+
+
+        val responseEntity: ResponseEntity<SearchImageResponse?> = RestTemplate()
+            .exchange(
+                uri,
+                HttpMethod.GET,
+                httpEntity,
+                responseType
+            )
+
+        return responseEntity.getBody()
     }
 }
 
